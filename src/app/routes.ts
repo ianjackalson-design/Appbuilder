@@ -5,6 +5,7 @@ import { Chat } from "./screens/Chat";
 import { TasksEvents } from "./screens/TasksEvents";
 import { Settings } from "./screens/Settings";
 import { Connect } from "./screens/Connect";
+import { ControlCenter } from "./screens/ControlCenter";
 
 export const router = createBrowserRouter([
   {
@@ -22,6 +23,7 @@ export const router = createBrowserRouter([
       { index: true, Component: Home },
       { path: "chat", Component: Chat },
       { path: "tasks", Component: TasksEvents },
+      { path: "control", Component: ControlCenter },
       { path: "settings", Component: Settings },
     ],
   },

@@ -2,9 +2,12 @@ import { useEffect, useRef } from 'react';
 import { useChat } from '../contexts/ChatContext';
 import { ChatBubble } from '../components/ChatBubble';
 import { MessageInput } from '../components/MessageInput';
+import { Sparkles } from 'lucide-react';
+import { Switch } from '../components/ui/switch';
+import { Label } from '../components/ui/label';
 
 export function Chat() {
-  const { messages, sendMessage, isLoading } = useChat();
+  const { messages, sendMessage, isLoading, useAI, setUseAI } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -14,8 +17,27 @@ export function Chat() {
   return (
     <div className="flex flex-col h-full">
       <div className="bg-white border-b border-gray-200 p-4">
-        <h1 className="text-xl font-bold text-gray-900">Conversation</h1>
-        <p className="text-sm text-gray-600">Chat with your AI assistant</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Conversation</h1>
+            <p className="text-sm text-gray-600">Chat with your AI assistant</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="ai-toggle" className="text-sm cursor-pointer">
+              <div className="flex items-center gap-1">
+                <Sparkles className={`w-4 h-4 ${useAI ? 'text-yellow-500' : 'text-gray-400'}`} />
+                <span className={useAI ? 'text-yellow-600 font-medium' : 'text-gray-500'}>
+                  AI {useAI ? 'ON' : 'OFF'}
+                </span>
+              </div>
+            </Label>
+            <Switch 
+              id="ai-toggle"
+              checked={useAI} 
+              onCheckedChange={setUseAI}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 bg-gray-50">

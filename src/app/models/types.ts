@@ -59,8 +59,12 @@ export interface AppConfig {
   ttsProvider: string;
   ttsModel: string;
   ttsVoice: string;
+  ttsSpeed?: number;
+  deviceVolume?: number;
   ledEnabled: boolean;
   ledBrightness: number;
+  ledMode?: 'off' | 'breathing' | 'rainbow' | 'solid';
+  ledColor?: string;
   wakeWord: string;
   autoListen: boolean;
 }

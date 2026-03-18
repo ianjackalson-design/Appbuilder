@@ -1,18 +1,48 @@
 import { useState } from 'react';
 import { useConfig } from '../contexts/ConfigContext';
-import { Settings2, Wifi, Brain, Volume2, Lightbulb, Info } from 'lucide-react';
+import { Settings2, Wifi, Brain, Volume2, Lightbulb, Info, Sparkles, TestTube } from 'lucide-react';
 import { Label } from '../components/ui/label';
 import { Input } from '../components/ui/input';
 import { Slider } from '../components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Button } from '../components/ui/button';
+import { aiService } from '../services/aiService';
+import { toast } from 'sonner';
 
 export function Settings() {
   const { config, updateConfig, isConnected, disconnect } = useConfig();
   const [formData, setFormData] = useState(config);
+  const [isTesting, setIsTesting] = useState(false);
 
   const handleSave = async () => {
     await updateConfig(formData);
+  };
+
+  const handleTestAI = async () => {
+    if (!formData.llmApiKey?.trim()) {
+      toast.error('Please enter an API key first');
+      return;
+    }
+
+    setIsTesting(true);
+    
+    // Configure AI service with current form data
+    aiService.setConfig({
+      provider: formData.llmProvider as 'openai' | 'anthropic' | 'gemini' | 'custom',
+      model: formData.llmModel,
+      apiKey: formData.llmApiKey,
+      baseUrl: formData.llmBaseUrl,
+    });
+
+    const result = await aiService.testConnection();
+    
+    if (result.success) {
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
+    }
+    
+    setIsTesting(false);
   };
 
   return (
@@ -69,19 +99,38 @@ export function Settings() {
         <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
           <div className="flex items-center gap-2 mb-4">
             <Brain className="w-5 h-5 text-gray-700" />
-            <h3 className="font-semibold text-gray-900">LLM Configuration</h3>
+            <h3 className="font-semibold text-gray-900">AI Configuration</h3>
+            <Sparkles className="w-4 h-4 text-yellow-500 ml-auto" />
           </div>
           <div className="space-y-3">
             <div>
-              <Label>API Key</Label>
-              <Input
-                type="password"
-                value={formData.llmApiKey || ''}
-                onChange={(e) => setFormData({ ...formData, llmApiKey: e.target.value })}
-                placeholder="sk-••••••••••••••••"
-              />
-              <p className="text-xs text-gray-500 mt-1">Your API key is securely stored</p>
+              <Label>AI Provider</Label>
+              <Select
+                value={formData.llmProvider}
+                onValueChange={(value) => {
+                  setFormData({ 
+                    ...formData, 
+                    llmProvider: value,
+                    // Set default models for each provider
+                    llmModel: value === 'openai' ? 'gpt-4' 
+                      : value === 'anthropic' ? 'claude-3-5-sonnet-20241022'
+                      : value === 'gemini' ? 'gemini-1.5-pro'
+                      : formData.llmModel
+                  });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openai">OpenAI</SelectItem>
+                  <SelectItem value="anthropic">Anthropic Claude</SelectItem>
+                  <SelectItem value="gemini">Google Gemini</SelectItem>
+                  <SelectItem value="custom">Custom (OpenAI Compatible)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            
             <div>
               <Label>Model</Label>
               <Select
@@ -92,14 +141,86 @@ export function Settings() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="gpt-4">GPT-4</SelectItem>
-                  <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-                  <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
-                  <SelectItem value="claude-3-opus">Claude 3 Opus</SelectItem>
-                  <SelectItem value="claude-3-sonnet">Claude 3 Sonnet</SelectItem>
+                  {formData.llmProvider === 'openai' && (
+                    <>
+                      <SelectItem value="gpt-4">GPT-4</SelectItem>
+                      <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                      <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                      <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+                    </>
+                  )}
+                  {formData.llmProvider === 'anthropic' && (
+                    <>
+                      <SelectItem value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</SelectItem>
+                      <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
+                      <SelectItem value="claude-3-sonnet-20240229">Claude 3 Sonnet</SelectItem>
+                      <SelectItem value="claude-3-haiku-20240307">Claude 3 Haiku</SelectItem>
+                    </>
+                  )}
+                  {formData.llmProvider === 'gemini' && (
+                    <>
+                      <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
+                      <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
+                      <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
+                    </>
+                  )}
+                  {formData.llmProvider === 'custom' && (
+                    <SelectItem value="custom-model">Custom Model</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-gray-500 mt-1">
+                {formData.llmProvider === 'openai' && 'OpenAI models for chat and completion'}
+                {formData.llmProvider === 'anthropic' && 'Anthropic Claude AI models'}
+                {formData.llmProvider === 'gemini' && 'Google Gemini AI models'}
+                {formData.llmProvider === 'custom' && 'OpenAI-compatible API endpoint'}
+              </p>
             </div>
+
+            <div>
+              <Label>API Key</Label>
+              <Input
+                type="password"
+                value={formData.llmApiKey || ''}
+                onChange={(e) => setFormData({ ...formData, llmApiKey: e.target.value })}
+                placeholder={
+                  formData.llmProvider === 'openai' ? 'sk-••••••••••••••••'
+                  : formData.llmProvider === 'anthropic' ? 'sk-ant-••••••••••••••••'
+                  : formData.llmProvider === 'gemini' ? 'AI••••••••••••••••'
+                  : 'Your API key'
+                }
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {formData.llmProvider === 'openai' && 'Get your API key from platform.openai.com'}
+                {formData.llmProvider === 'anthropic' && 'Get your API key from console.anthropic.com'}
+                {formData.llmProvider === 'gemini' && 'Get your API key from makersuite.google.com'}
+                {formData.llmProvider === 'custom' && 'Enter your custom API key'}
+              </p>
+            </div>
+
+            {(formData.llmProvider === 'custom' || formData.llmBaseUrl) && (
+              <div>
+                <Label>Base URL (Optional)</Label>
+                <Input
+                  value={formData.llmBaseUrl || ''}
+                  onChange={(e) => setFormData({ ...formData, llmBaseUrl: e.target.value })}
+                  placeholder="https://api.example.com/v1"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Custom API endpoint for proxies or compatible services
+                </p>
+              </div>
+            )}
+
+            <Button 
+              onClick={handleTestAI} 
+              variant="outline" 
+              className="w-full"
+              disabled={isTesting || !formData.llmApiKey?.trim()}
+            >
+              <TestTube className="w-4 h-4 mr-2" />
+              {isTesting ? 'Testing Connection...' : 'Test AI Connection'}
+            </Button>
           </div>
         </div>
 

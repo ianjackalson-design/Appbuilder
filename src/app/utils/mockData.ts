@@ -13,8 +13,12 @@ export const mockConfig: AppConfig = {
   ttsProvider: 'openai',
   ttsModel: 'tts-1',
   ttsVoice: 'alloy',
+  ttsSpeed: 1.0,
+  deviceVolume: 75,
   ledEnabled: true,
   ledBrightness: 80,
+  ledMode: 'breathing',
+  ledColor: '#0000ff',
   wakeWord: 'Hey Assistant',
   autoListen: true,
 };
